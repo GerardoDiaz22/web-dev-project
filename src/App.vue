@@ -3,6 +3,7 @@ import HelloWorld from './components/HelloWorld.vue';
 import TheWelcome from './components/TheWelcome.vue';
 
 import { initializeApp } from 'firebase/app';
+import { getFirestore, collection } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -14,47 +15,56 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+interface Student {
+  id: string;
+  name: string;
+  age: number;
+  email: string;
+}
+
+interface Course {
+  id: string;
+  name: string;
+  description: string;
+  credits: number;
+}
+
+interface Enrollment {
+  id: string;
+  studentId: string;
+  courseId: string;
+}
+
+interface Grade {
+  id: string;
+  studentId: string;
+  courseId: string;
+  grade: number;
+}
+
+const students: Student[] = collection(db, 'students');
+
+const courses: Course[] = collection(db, 'courses');
+
+const enrollments: Enrollment[] = collection(db, 'enrollments');
+
+const grades: Grade[] = collection(db, 'grades');
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
+  <h1>Dirección de Asuntos Estudiantiles</h1>
+  <nav class="menu-bar">
+    <RouterLink to="/">Inicio</RouterLink>
+    <RouterLink to="/login">Ir al Login</RouterLink>
+  </nav>
   <main>
-    <TheWelcome />
+    <RouterView />
   </main>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-}
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
 </style>
