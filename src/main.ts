@@ -10,6 +10,8 @@ import App from './App.vue';
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
 import Register from './views/Register.vue';
+import 'flowbite/dist/flowbite.min.css'; 
+import Student from './views/Student.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +19,8 @@ const router = createRouter({
     { path: '/', component: Home },
     { path: '/login', component: Login },
     { path: '/register', component: Register },
+    { path: '/students', component: Student },
+
     // { path: 'students', component: Students, meta: { requiresAuth: true } },
   ],
 });
