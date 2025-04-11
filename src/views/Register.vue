@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 
 const router = useRouter();
 const auth = getAuth();
@@ -10,9 +10,9 @@ const email = ref('');
 const password = ref('');
 const errMsg = ref('');
 
-const login = async () => {
+const register = async () => {
   try {
-    const data = await signInWithEmailAndPassword(auth, email.value, password.value);
+    const data = await createUserWithEmailAndPassword(auth, email.value, password.value);
     router.push('/');
   } catch (err) {
     console.error(err);
@@ -20,11 +20,11 @@ const login = async () => {
       case 'auth/invalid-email':
         errMsg.value = 'Correo electrónico inválido';
         break;
-      case 'auth/user-not-found':
-        errMsg.value = 'Usuario no encontrado';
+      case 'auth/weak-password':
+        errMsg.value = 'La contraseña debe tener al menos 6 caracteres';
         break;
-      case 'auth/invalid-credential':
-        errMsg.value = 'Credenciales inválidas';
+      case 'auth/email-already-in-use':
+        errMsg.value = 'El correo electrónico ya está en uso';
         break;
       case 'auth/missing-password':
         errMsg.value = 'Falta la contraseña';
@@ -38,12 +38,12 @@ const login = async () => {
 </script>
 
 <template>
-  <h1>Iniciar sesión</h1>
+  <h1>Registrar tu cuenta</h1>
   <p><input type="text" placeholder="Correo" v-model="email" /></p>
   <p><input type="password" placeholder="Contraseña" v-model="password" /></p>
   <p v-if="errMsg">{{ errMsg }}</p>
-  <p><button @click="login">Iniciar sesión</button></p>
-  <p>No tienes cuenta? <RouterLink to="/register">Registrarse</RouterLink></p>
+  <p><button @click="register">Registrarse</button></p>
+  <p>Ya tienes cuenta? <RouterLink to="/login">Iniciar sesión</RouterLink></p>
 </template>
 
 <style scoped></style>
