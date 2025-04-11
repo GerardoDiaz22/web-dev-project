@@ -21,17 +21,16 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach(async (to, from, next) => {
-  const auth = getAuth();
-
-  const checkAuthState = () =>
-    new Promise((resolve) => {
-      onAuthStateChanged(auth, (user) => {
-        resolve(user);
-      });
+const getCurrentUser = () =>
+  new Promise((resolve) => {
+    const removeListener = onAuthStateChanged(getAuth(), (user) => {
+      removeListener();
+      resolve(user);
     });
+  });
 
-  const currentUser = await checkAuthState();
+router.beforeEach(async (to, from, next) => {
+  const currentUser = await getCurrentUser();
 
   if (to.matched.some((record) => record.meta.requiresAuth) && !currentUser) {
     next({ path: '/login' });
