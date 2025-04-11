@@ -1,11 +1,29 @@
 <script setup>
 import { onMounted } from 'vue'
 import { initFlowbite } from 'flowbite' // <-- Importa la función de inicialización
+import { localAuth } from '@/composables/local-auth';
+import { getAuth,signOut } from 'firebase/auth';
+import { useRouter } from 'vue-router';
+
+
+const auth = getAuth();       
+const router = useRouter();   
+
+const { currentUser } = localAuth();
 
 // Inicializa Flowbite cuando el componente se monta
 onMounted(() => {
     initFlowbite();
 })
+
+const logout = async () => {
+  try {
+    await signOut(auth);
+    router.push('/');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
+};
 </script>
 
 <template>
@@ -33,6 +51,15 @@ onMounted(() => {
         </li>
         <li>
           <a href="#" class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Calificaciones</a>
+        </li>
+        <li v-if="currentUser">
+          <button @click="logout" class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Cerrar sesión</button>
+        </li>
+        <li>
+          <a href="/login" v-if="!currentUser" class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Iniciar sesión</a>
+        </li>
+        <li>
+          <a href="/register" v-if="!currentUser" class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Registrarse</a>
         </li>
       </ul>
     </div>

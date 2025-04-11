@@ -12,8 +12,7 @@ const { currentUser } = localAuth();
     <h1>Hogar</h1>
     <p v-if="currentUser">Bienvenido, {{ currentUser.email }}</p>
     <p v-else>Por favor, inicia sesión o regístrate para continuar.</p>
-    <p><button v-if="!currentUser" @click="() => router.push('/login')">Iniciar sesión</button></p>
-    <p><button v-if="!currentUser" @click="() => router.push('/register')">Registrarse</button></p>
+
   </div>
 </template>
 
