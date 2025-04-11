@@ -19,27 +19,14 @@ const logout = async () => {
 </script>
 
 <template>
-  <!-- <h1>Dirección de Asuntos Estudiantiles</h1>
-  <nav class="menu-bar">
-    <RouterLink to="/">Inicio</RouterLink>
-    <RouterLink v-if="!currentUser" to="/login">Iniciar sesión</RouterLink>
-    <RouterLink v-if="!currentUser" to="/register">Registrarse</RouterLink>
-    <button @click="logout" v-if="currentUser">Cerrar sesión</button>
-  </nav> -->
-  <!-- <main> -->
     <div class="max-w-8xl mx-auto">
       <NavBar/>
 
-<RouterView />
-</div>
-<main>
-    <h1>Dirección de Asuntos Estudiantiles</h1>
-  <nav class="menu-bar">
-    <RouterLink to="/">Inicio</RouterLink>
-    <RouterLink v-if="!currentUser" to="/login">Iniciar sesión</RouterLink>
-    <RouterLink v-if="!currentUser" to="/register">Registrarse</RouterLink>
-    <button @click="logout" v-if="currentUser">Cerrar sesión</button>
-  </nav> 
+      <RouterView />
+    </div>
+    <main>
+    <!-- <h1>Dirección de Asuntos Estudiantiles</h1> -->
+
 </main>
 
     
