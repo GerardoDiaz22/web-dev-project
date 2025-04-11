@@ -3,15 +3,17 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
+
 import './assets/main.css';
+import 'flowbite/dist/flowbite.min.css'; 
 
 import App from './App.vue';
 
 import Home from './views/Home.vue';
 import Login from './views/Login.vue';
 import Register from './views/Register.vue';
-import 'flowbite/dist/flowbite.min.css'; 
 import Student from './views/Student.vue';
+import Playground from './views/Playground.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +24,7 @@ const router = createRouter({
     { path: '/students', component: Student },
 
     // { path: 'students', component: Students, meta: { requiresAuth: true } },
+    { path: '/playground', component: Playground },
   ],
 });
 
