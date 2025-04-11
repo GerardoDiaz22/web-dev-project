@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const router = useRouter();
 const auth = getAuth();
@@ -35,6 +35,16 @@ const login = async () => {
     }
   }
 };
+
+const loginGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const data = await signInWithPopup(auth, provider);
+    router.push('/');
+  } catch (err) {
+    console.error(err);
+  }
+};
 </script>
 
 <template>
@@ -43,6 +53,7 @@ const login = async () => {
   <p><input type="password" placeholder="Contraseña" v-model="password" /></p>
   <p v-if="errMsg">{{ errMsg }}</p>
   <p><button @click="login">Iniciar sesión</button></p>
+  <p><button @click="loginGoogle">Iniciar sesión con Google</button></p>
   <p>No tienes cuenta? <RouterLink to="/register">Registrarse</RouterLink></p>
 </template>
 
