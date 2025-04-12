@@ -19,7 +19,7 @@ onMounted(() => {
 const logout = async () => {
   try {
     await signOut(auth);
-    router.push('/');
+    router.push('/login');
   } catch (error) {
     console.error('Error al cerrar sesión:', error);
   }
