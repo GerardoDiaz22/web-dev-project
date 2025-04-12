@@ -27,11 +27,13 @@ const getDocument = async (db: Firestore, collectionName: string, documentId: st
       case 'not-found':
         msgErr = 'El documento no existe.';
         break;
+      case 'already-exists':
+        msgErr = 'El documento ya existe.';
+        break;
       default:
         msgErr = 'Error al obtener documento. Inténtalo de nuevo más tarde.';
-        break;
     }
-    throw new Error(msgErr);
+    throw msgErr;
   }
 };
 
@@ -65,11 +67,13 @@ const addDocument = async (db: Firestore, collectionName: string, data: any) => 
       case 'not-found':
         msgErr = 'El documento no existe.';
         break;
+      case 'already-exists':
+        msgErr = 'El documento ya existe.';
+        break;
       default:
         msgErr = 'Error al obtener documento. Inténtalo de nuevo más tarde.';
-        break;
     }
-    throw new Error(msgErr);
+    throw msgErr;
   }
 };
 
@@ -100,11 +104,13 @@ const editDocument = async (db: Firestore, collectionName: string, documentId: s
       case 'not-found':
         msgErr = 'El documento no existe.';
         break;
+      case 'already-exists':
+        msgErr = 'El documento ya existe.';
+        break;
       default:
         msgErr = 'Error al obtener documento. Inténtalo de nuevo más tarde.';
-        break;
     }
-    throw new Error(msgErr);
+    throw msgErr;
   }
 };
 
@@ -135,11 +141,13 @@ const deleteDocument = async (db: Firestore, collectionName: string, documentId:
       case 'not-found':
         msgErr = 'El documento no existe.';
         break;
+      case 'already-exists':
+        msgErr = 'El documento ya existe.';
+        break;
       default:
         msgErr = 'Error al obtener documento. Inténtalo de nuevo más tarde.';
-        break;
     }
-    throw new Error(msgErr);
+    throw msgErr;
   }
 };
 
