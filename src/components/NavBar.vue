@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { initFlowbite } from 'flowbite' // <-- Importa la función de inicialización
-import { localAuth } from '@/composables/local-auth';
+import { localAuth } from '@/composables/useAuth';
 import { getAuth,signOut } from 'firebase/auth';
 import { useRouter } from 'vue-router';
 

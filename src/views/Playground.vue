@@ -1,29 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
+
+import StudentForm from '@/components/StudentForm.vue';
 
 // Initialize Firebase Firestore
-const db = getFirestore();
+const db: Firestore = getFirestore();
 
 // Form data for each collection
-const student = ref({ id: '', name: '', age: null });
 const course = ref({ id: '', name: '', description: '' });
 const enrollment = ref({ studentId: '', courseId: '' });
 const grade = ref({ studentId: '', courseId: '', value: null });
 
 // Functions to add documents to Firestore
-const addStudent = async () => {
-  try {
-    await addDoc(collection(db, 'students'), student.value);
-    alert('Student added successfully!');
-
-    // Reset form fields after submission
-    student.value = { id: '', name: '', age: null };
-  } catch (error) {
-    console.error('Error adding student:', error);
-  }
-};
-
 const addCourse = async () => {
   try {
     await addDoc(collection(db, 'courses'), course.value);
@@ -66,12 +56,7 @@ const addGrade = async () => {
 
   <!-- Form for Students -->
   <h2>Agregar Estudiante</h2>
-  <form @submit.prevent="addStudent">
-    <input v-model="student.id" type="text" placeholder="ID" required />
-    <input v-model="student.name" type="text" placeholder="Nombre" required />
-    <input v-model="student.age" type="number" placeholder="Edad" required />
-    <button type="submit">Agregar</button>
-  </form>
+  <StudentForm />
 
   <!-- Form for Courses -->
   <h2>Agregar Asignatura</h2>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { localAuth } from '@/composables/local-auth';
+import { localAuth } from '@/composables/useAuth';
 
 const router = useRouter();
 const { currentUser } = localAuth();

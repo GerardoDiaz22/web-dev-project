@@ -2,7 +2,7 @@
 import { computed } from 'vue'; 
 import { useRoute, useRouter } from 'vue-router';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { localAuth } from '@/composables/local-auth';
+import { localAuth } from '@/composables/useAuth';
 import NavBar from './components/NavBar.vue';
 
 const router = useRouter();
