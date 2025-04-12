@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed } from 'vue'; 
+import { useRoute, useRouter } from 'vue-router';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { localAuth } from '@/composables/local-auth';
 import NavBar from './components/NavBar.vue';
+
 const router = useRouter();
+const route = useRoute();
 const auth = getAuth();
 const { currentUser } = localAuth();
+
+const showNavbar = computed(() => {
+  const hiddenRoutes = ['/login', '/register'];
+  return !hiddenRoutes.includes(route.path);
+});
 
 const logout = async () => {
   try {
@@ -16,21 +23,14 @@ const logout = async () => {
     console.error('Error al cerrar sesión:', error);
   }
 };
+
 </script>
 
 <template>
     <div class="max-w-8xl mx-auto">
-      <NavBar/>
-
+      <NavBar v-if="showNavbar" />
       <RouterView />
     </div>
-    <main>
-    <!-- <h1>Dirección de Asuntos Estudiantiles</h1> -->
-
-</main>
-
-    
-  <!-- </main> -->
 </template>
 
 <style scoped></style>
