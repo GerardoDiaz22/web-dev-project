@@ -8,19 +8,22 @@ import { addDocument } from '@/services/db-handler';
 const db: Firestore = getFirestore();
 
 // Form data for collection
-const enrollment = ref({ studentId: '', courseId: '' });
+const enrollment = ref({ id: '', studentId: '', courseId: '' });
 
 // Function to add document to Firestore
 const addEnrollment = async () => {
   try {
-    // Add course to Firestore
+    // Set custom ID
+    enrollment.value.id = enrollment.value.studentId + '_' + enrollment.value.courseId;
+
+    // Add enrollment to Firestore
     await addDocument(db, 'enrollments', enrollment.value);
 
     // TODO: replace with a toast notification
     alert('Matricula agregada exitosamente!');
 
     // Reset form fields after submission
-    enrollment.value = { studentId: '', courseId: '' };
+    enrollment.value = { id: '', studentId: '', courseId: '' };
   } catch (err) {
     console.error(err);
     // TODO: replace with a modal dialog
