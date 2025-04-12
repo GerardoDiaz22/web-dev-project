@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
 
 import StudentForm from '@/components/StudentForm.vue';
 
 // Initialize Firebase Firestore
-const db = getFirestore();
+const db: Firestore = getFirestore();
 
 // Form data for each collection
 const course = ref({ id: '', name: '', description: '' });
