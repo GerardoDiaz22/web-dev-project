@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getFirestore, collection, doc, addDoc, getDoc } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
+import { addDocument } from '@/services/db-handler';
 
 // Initialize Firebase Firestore
-const db = getFirestore();
+const db: Firestore = getFirestore();
 
 // Form data for collection
 const student = ref({ id: '', name: '', age: null });
@@ -11,18 +13,8 @@ const student = ref({ id: '', name: '', age: null });
 // Function to add document to Firestore
 const addStudent = async () => {
   try {
-    // Validate if entry already exists
-    const studentRef = doc(db, 'students', student.value.id);
-    const studentDoc = await getDoc(studentRef);
-
-    if (studentDoc.exists()) {
-      // TODO: replace with a modal dialog
-      alert('Ya existe un estudiante con este ID.');
-      return;
-    }
-
     // Add student to Firestore
-    await addDoc(collection(db, 'students'), student.value);
+    await addDocument(db, 'students', student.value);
 
     // TODO: replace with a toast notification
     alert('Estudiante agregado exitosamente!');
@@ -32,16 +24,7 @@ const addStudent = async () => {
   } catch (err) {
     console.error(err);
     // TODO: replace with a modal dialog
-    switch (err.code) {
-      case 'permission-denied':
-        alert('No tienes permiso para agregar estudiantes.');
-        break;
-      case 'unavailable':
-        alert('El servicio no está disponible en este momento.');
-        break;
-      default:
-        alert('Error al agregar estudiante. Inténtalo de nuevo más tarde.');
-    }
+    alert(err);
   }
 };
 </script>
