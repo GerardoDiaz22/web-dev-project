@@ -30,11 +30,6 @@ const enrollmentFields = [
   { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
 ];
 
-const enrollmentEditFields = [
-{ key: 'studentId', label: 'Estudiante', type: 'text', required: true, placeholder: 'ID de Estudiante' },
-  { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
-];
-
 // Cargar enrollments desde Firestore
 const fetchenrollment = async () => {
     isLoading.value = true;
@@ -71,10 +66,10 @@ const filteredItems = computed(() => {
 
 
 
-function mostrarItem(item) {
-  console.log('Mostrar:', item);
-  // Lógica para mostrar detalles
-}
+// function mostrarItem(item) {
+//   console.log('Mostrar:', item);
+//   // Lógica para mostrar detalles
+// }
 
 
 // carga de datos al montar
@@ -99,7 +94,7 @@ const openAddModal = () => {
 const openEditModal = (enrollment) => {
   isEditMode.value = true;
   modalTitle.value = `Editar ${enrollment.name}`;
-  modalFields.value = enrollmentEditFields; 
+  modalFields.value = enrollmentFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...enrollment };
   showModal.value = true;
@@ -113,14 +108,10 @@ const handleFormSubmit = async (formData) => {
       // --- Modo Edición ---
       console.log("esto es current",currentItem.value.id)
       console.log("formdata",formData)
-      const dataToUpdate = {
-        id: toString(formData.id),
-      name: formData.name, 
 
-    };
-      const enrollmentDocRef = doc(db, 'enrollments', toString(currentItem.value.id));
+      const enrollmentDocRef = doc(db, 'enrollments', currentItem.value.id);
       console.log("esto es una prueba",enrollmentDocRef)
-      await updateDoc(enrollmentDocRef, dataToUpdate); 
+      await updateDoc(enrollmentDocRef, formData); 
 
        console.log('enrollment actualizada:', currentItem.value.id);
        toast.success("Inscripción actualizada exitosamente!")
@@ -135,6 +126,7 @@ const handleFormSubmit = async (formData) => {
       toast.success("Inscripción agregada exitosamente!")
 
     }
+    fetchenrollment()
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
     currentItem.value = null; // Limpiar item actual
 
@@ -152,7 +144,7 @@ const handleFormSubmit = async (formData) => {
 
 // Función para eliminar (ejemplo básico)
 const eliminarenrollment = async (enrollment) => {
-  if (!confirm(`¿Estás seguro de que quieres eliminar a ${enrollment.nombre}?`)) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar esta inscripción?`)) {
     return;
   }
   isLoading.value = true;
@@ -180,8 +172,8 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'Código de estudiante': 'studentId',
-    'Código de asignatura': 'courseId',
+    'Estudiante': 'studentId',
+    'Asignatura': 'courseId',
   };
 
   // Llama a la función reutilizable
@@ -303,8 +295,8 @@ const prevPage = () => {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="px-4 py-3">Cod. Estudiante</th> 
-                            <th scope="col" class="px-4 py-3">Cod. Asignatura</th> 
+                            <th scope="col" class="px-4 py-3">Estudiante</th> 
+                            <th scope="col" class="px-4 py-3">Asignatura</th> 
 
                             <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">Acciones</span>
@@ -338,10 +330,9 @@ const prevPage = () => {
                                   class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600"
                                 >
                                     <ul class="py-4 text-sm text-gray-700 dark:text-gray-200" :aria-labelledby="`action-dropdown-button-${item.id}`">
-                                        <li>
-                                            <!-- Usamos @click para llamar a los métodos pasando el item actual -->
+                                        <!-- <li>
                                             <a href="#" @click.prevent="mostrarItem(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Mostrar</a>
-                                        </li>
+                                        </li> -->
                                         <li>
                                             <a href="#" @click.prevent="openEditModal(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Editar</a>
                                         </li>

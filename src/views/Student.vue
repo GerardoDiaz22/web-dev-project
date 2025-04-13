@@ -27,12 +27,6 @@ const toast = useToast();
 const personaFields = [
   { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
   { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
-  { key: 'id', label: 'id', type: 'text', required: true, placeholder: 'Ej: 25' },
-];
-
-const personaEditFields = [
-  { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
-  { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
 ];
 
 // Cargar personas desde Firestore
@@ -43,7 +37,8 @@ const fetchPersonas = async () => {
         const querySnapshot = await getDocs(personasCollection);
         personas.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("query snapshot",personas.value)
-  
+        console.log("query snapsho2t",querySnapshot.docs)
+
 
 
     } catch (error) {
@@ -71,10 +66,10 @@ const filteredItems = computed(() => {
 
 
 
-function mostrarItem(item) {
-  console.log('Mostrar:', item);
-  // Lógica para mostrar detalles
-}
+// function mostrarItem(item) {
+//   console.log('Mostrar:', item);
+//   // Lógica para mostrar detalles
+// }
 
 
 // carga de datos al montar
@@ -99,7 +94,7 @@ const openAddModal = () => {
 const openEditModal = (persona) => {
   isEditMode.value = true;
   modalTitle.value = `Editar ${persona.name}`;
-  modalFields.value = personaEditFields; 
+  modalFields.value = personaFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...persona };
   showModal.value = true;
@@ -114,7 +109,6 @@ const handleFormSubmit = async (formData) => {
       console.log("esto es current",currentItem.value.id)
       console.log("formdata",formData)
       const dataToUpdate = {
-        id: toString(formData.id),
       name: formData.name, 
 
     };
@@ -132,11 +126,12 @@ const handleFormSubmit = async (formData) => {
       // Añadir el nuevo item a la lista local con el ID devuelto
       personas.value.push({ id: docRef.id, ...formData });
       console.log('Persona agregada con ID:', docRef.id);
+      toast.success(`Estudiante "${formData.name}" agregado exitosamente!`);
+
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
     currentItem.value = null; // Limpiar item actual
-
-    toast.success(`Estudiante "${formData.name}" agregado exitosamente!`);
+    await fetchPersonas(); 
 
   } catch (error) {
     console.error("Error guardando persona: ", error);
@@ -151,12 +146,15 @@ const handleFormSubmit = async (formData) => {
 
 // Función para eliminar (ejemplo básico)
 const eliminarPersona = async (persona) => {
-  if (!confirm(`¿Estás seguro de que quieres eliminar a ${persona.nombre}?`)) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar a ${persona.name}?`)) {
+    console.log("ira",persona)
+
     return;
   }
   isLoading.value = true;
   try {
     const personaDocRef = doc(db, 'students', persona.id);
+    console.log("ira",persona)
     await deleteDoc(personaDocRef);
     // Eliminar de la lista local
     personas.value = personas.value.filter(p => p.id !== persona.id);
@@ -178,7 +176,6 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'ID': 'id',          
     'Nombre': 'name',
     'Edad': 'age'
   };
@@ -302,7 +299,6 @@ const prevPage = () => {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="px-4 py-3">ID</th>
                             <th scope="col" class="px-4 py-3">Nombre</th> 
                             <th scope="col" class="px-4 py-3">Edad</th> 
                             <th scope="col" class="px-4 py-3">
@@ -317,9 +313,8 @@ const prevPage = () => {
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.id }}</th>
-                            <td class="px-4 py-3">{{ item.name }}</td> 
-                            <td class="px-4 py-3">{{ item.age }}</td>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.name }}</th>
+                            <td class="px-4 py-3">{{ item.age }}</td> 
                             <td class="px-4 py-3 flex items-center justify-end">
                      
                                 <button
@@ -337,10 +332,9 @@ const prevPage = () => {
                                   class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600"
                                 >
                                     <ul class="py-4 text-sm text-gray-700 dark:text-gray-200" :aria-labelledby="`action-dropdown-button-${item.id}`">
-                                        <li>
-                                            <!-- Usamos @click para llamar a los métodos pasando el item actual -->
+                                        <!-- <li>
                                             <a href="#" @click.prevent="mostrarItem(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Mostrar</a>
-                                        </li>
+                                        </li> -->
                                         <li>
                                             <a href="#" @click.prevent="openEditModal(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Editar</a>
                                         </li>

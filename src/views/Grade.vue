@@ -26,18 +26,11 @@ const toast = useToast();
 
 // Define la estructura de los campos para agregar grados en el modal
 const gradeFields = [
-{ key: 'id', label: 'id', type: 'text', required: true, placeholder: 'Ej: 25' },
-
   { key: 'studentId', label: 'Estudiante', type: 'text', required: true, placeholder: 'ID de Estudiante' },
   { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
   { key: 'value', label: 'Calificación', type: 'number', required: true, placeholder: 'Calificación' },
 ];
 
-const gradeEditFields = [
-{ key: 'studentId', label: 'Estudiante', type: 'text', required: true, placeholder: 'ID de Estudiante' },
-  { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
-  { key: 'value', label: 'Calificación', type: 'number', required: true, placeholder: 'Calificación' },
-];
 
 // Cargar grades desde Firestore
 const fetchGrade = async () => {
@@ -75,10 +68,10 @@ const filteredItems = computed(() => {
 
 
 
-function mostrarItem(item) {
-  console.log('Mostrar:', item);
-  // Lógica para mostrar detalles
-}
+// function mostrarItem(item) {
+//   console.log('Mostrar:', item);
+//   // Lógica para mostrar detalles
+// }
 
 
 // carga de datos al montar
@@ -103,7 +96,7 @@ const openAddModal = () => {
 const openEditModal = (grade) => {
   isEditMode.value = true;
   modalTitle.value = `Editar ${grade.name}`;
-  modalFields.value = gradeEditFields; 
+  modalFields.value = gradeFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...grade };
   showModal.value = true;
@@ -117,14 +110,9 @@ const handleFormSubmit = async (formData) => {
       // --- Modo Edición ---
       console.log("esto es current",currentItem.value.id)
       console.log("formdata",formData)
-      const dataToUpdate = {
-        id: toString(formData.id),
-      name: formData.name, 
 
-    };
-      const gradeDocRef = doc(db, 'grades', toString(currentItem.value.id));
-      console.log("esto es una prueba",gradeDocRef)
-      await updateDoc(gradeDocRef, dataToUpdate); 
+      const gradeDocRef = doc(db, 'grades', currentItem.value.id);
+      await updateDoc(gradeDocRef, formData); 
 
        console.log('grade actualizada:', currentItem.value.id);
        toast.success("Calificación actualizada exitosamente!")
@@ -141,7 +129,7 @@ const handleFormSubmit = async (formData) => {
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
     currentItem.value = null; // Limpiar item actual
-
+    fetchGrade()
 
   } catch (error) {
     console.error("Error guardando grade: ", error);
@@ -156,7 +144,7 @@ const handleFormSubmit = async (formData) => {
 
 // Función para eliminar (ejemplo básico)
 const eliminargrade = async (grade) => {
-  if (!confirm(`¿Estás seguro de que quieres eliminar a ${grade.nombre}?`)) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar la calificacion con id ${grade.id}?`)) {
     return;
   }
   isLoading.value = true;
@@ -185,9 +173,8 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'ID': 'id',          
-    'Código de estudiante': 'studentId',
-    'Código de asignatura': 'courseId',
+    'Estudiante': 'studentId',
+    'Asignatura': 'courseId',
     'Calificación':'value'
   };
 
@@ -310,9 +297,8 @@ const prevPage = () => {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="px-4 py-3">ID</th>
-                            <th scope="col" class="px-4 py-3">Cod. Estudiante</th> 
-                            <th scope="col" class="px-4 py-3">Cod. Asignatura</th> 
+                            <th scope="col" class="px-4 py-3">Estudiante</th> 
+                            <th scope="col" class="px-4 py-3">Asignatura</th> 
                             <th scope="col" class="px-4 py-3">Ponderación</th> 
 
                             <th scope="col" class="px-4 py-3">
@@ -327,8 +313,7 @@ const prevPage = () => {
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.id }}</th>
-                            <td class="px-4 py-3">{{ item.studentId }}</td> 
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.studentId }}</th>
                             <td class="px-4 py-3">{{ item.courseId }}</td>
                             <td class="px-4 py-3">{{ item.value }}</td>
 
@@ -349,10 +334,9 @@ const prevPage = () => {
                                   class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600"
                                 >
                                     <ul class="py-4 text-sm text-gray-700 dark:text-gray-200" :aria-labelledby="`action-dropdown-button-${item.id}`">
-                                        <li>
-                                            <!-- Usamos @click para llamar a los métodos pasando el item actual -->
+                                        <!-- <li>
                                             <a href="#" @click.prevent="mostrarItem(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Mostrar</a>
-                                        </li>
+                                        </li> -->
                                         <li>
                                             <a href="#" @click.prevent="openEditModal(item)" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Editar</a>
                                         </li>
@@ -421,7 +405,7 @@ const prevPage = () => {
     :fields="modalFields"
     :initial-data="currentItem"
     @submit="handleFormSubmit"
-    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear grado'"
+    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear Calificación'"
   />
 
 </template>
