@@ -4,6 +4,7 @@ import { initFlowbite } from 'flowbite';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
 import GenericFormModal from '@/components/GenericFormModal.vue';
 import { useToast } from 'vue-toastification';
+import { generateExcelReport } from '@/utils/excelExporter'; 
 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
@@ -172,6 +173,32 @@ const eliminarPersona = async (persona) => {
   }
 };
 
+//Función para Exportar a Excel
+const exportToExcel = () => {
+  const dataToExport = filteredItems.value;
+
+  const columnMapping = {
+    'ID': 'id',          
+    'Nombre': 'name',
+    'Edad': 'age'
+  };
+
+  // Llama a la función reutilizable
+  const success = generateExcelReport(
+      dataToExport,
+      columnMapping,
+      'reporte_estudiantes', // Nombre base del archivo
+      'Estudiantes'          // Nombre de la hoja
+   );
+
+  if (success) {
+      toast.success("Reporte Excel generado exitosamente!");
+  } else {
+      toast.error("No se pudo generar el reporte (verifique si hay datos).");
+  }
+};
+
+
 </script>
 
 <template>
@@ -215,30 +242,18 @@ const eliminarPersona = async (persona) => {
                     Agregar Estudiante
                     </button>
 
-                    <!-- <div class="flex items-center space-x-3 w-full md:w-auto">
-                        <button id="filterDropdownButton" data-dropdown-toggle="filterDropdown" class="w-full md:w-auto flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" type="button">
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="h-4 w-4 mr-2 text-gray-400" viewbox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
-                            </svg>
-                            Filtrar
-                            <svg class="-mr-1 ml-1.5 w-5 h-5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path clip-rule="evenodd" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                            </svg>
-                        </button>
-                        <div id="filterDropdown" class="z-10 hidden w-48 p-3 bg-white rounded-lg shadow dark:bg-gray-700">
-                            <h6 class="mb-3 text-sm font-medium text-gray-900 dark:text-white">Filtrar por Curso</h6>
-                            <ul class="space-y-2 text-sm" aria-labelledby="filterDropdownButton">
-                                <li class="flex items-center">
-                                    <input id="vue-filter" type="checkbox" value="Vue Avanzado" class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                    <label for="vue-filter" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Vue Avanzado</label>
-                                </li>
-                                <li class="flex items-center">
-                                    <input id="react-filter" type="checkbox" value="React Básico" class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                    <label for="react-filter" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">React Básico</label>
-                                </li>
-                            </ul>
-                        </div>
-                    </div> -->
+                    <div class="flex items-center space-x-3 w-full md:w-auto">
+                      <button
+                        type="button"
+                        @click="exportToExcel"
+                        class="w-full md:w-auto flex items-center justify-center py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4 mr-2">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Generar reporte
+                    </button>
+                    </div>
                 </div>
             </div>
             <div class="overflow-x-auto">

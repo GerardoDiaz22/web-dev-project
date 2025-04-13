@@ -30,8 +30,6 @@ const router = createRouter({
     { path: '/grades', component: Grade },
     { path: '/courses', component: Course },
     { path: '/enrollments', component: Enrollment },
-
-    // { path: 'students', component: Students, meta: { requiresAuth: true } },
     { path: '/playground', component: Playground },
   ],
 });
