@@ -23,7 +23,7 @@ const isEditMode = ref(false); // Para saber si estamos editando
 
 const toast = useToast();
 
-// Define la estructura de los campos para agregar cursos en el modal
+// Define la estructura de los campos para agregar Asignaturas en el modal
 const courseFields = [
   { key: 'name', label: 'Nombre', type: 'text', required: true, placeholder: 'Nombre' },
   { key: 'description', label: 'Descripción', type: 'text', required: true, placeholder: 'Descripción' },
@@ -85,7 +85,7 @@ onMounted(() => {
 
 const openAddModal = () => {
   isEditMode.value = false;
-  modalTitle.value = 'Agregar Nuevo curso';
+  modalTitle.value = 'Agregar Nueva Asignatura';
   modalFields.value = courseFields; // Usa la definición de campos
   currentItem.value = {}; // Limpia datos previos, el modal usará valores por defecto
   showModal.value = true;
@@ -93,7 +93,7 @@ const openAddModal = () => {
 
 const openEditModal = (course) => {
   isEditMode.value = true;
-  modalTitle.value = `Editar ${course.name}`;
+  modalTitle.value = `Editar Asignatura`;
   modalFields.value = courseFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...course };
@@ -113,7 +113,7 @@ const handleFormSubmit = async (formData) => {
       await updateDoc(courseDocRef, formData); 
 
        console.log('course actualizada:', currentItem.value.id);
-       toast.success("Curso actualizado exitosamente!")
+       toast.success("Asignatura actualizado exitosamente!")
 
     } else {
       // --- Modo Creación ---
@@ -122,7 +122,7 @@ const handleFormSubmit = async (formData) => {
       // Añadir el nuevo item a la lista local con el ID devuelto
       courses.value.push({ id: docRef.id, ...formData });
       console.log('course agregada con ID:', docRef.id);
-      toast.success("Curso agregado exitosamente!")
+      toast.success("Asignatura agregado exitosamente!")
 
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
@@ -153,7 +153,7 @@ const eliminarcourse = async (course) => {
     // Eliminar de la lista local
     courses.value = courses.value.filter(p => p.id !== course.id);
     console.log('course eliminada:', course.id);
-    toast.success("Curso eliminado exitosamente!")
+    toast.success("Asignatura eliminado exitosamente!")
   } catch (error) {
      console.error("Error eliminando course: ", error);
      // Mostrar mensaje de error
@@ -171,7 +171,7 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'Curso': 'name',
+    'Asignatura': 'name',
     'Descripción': 'description',
   };
 
@@ -179,8 +179,8 @@ const exportToExcel = () => {
   const success = generateExcelReport(
       dataToExport,
       columnMapping,
-      'reporte_cursos', // Nombre base del archivo
-      'Cursos'          // Nombre de la hoja
+      'reporte_Asignaturas', // Nombre base del archivo
+      'Asignaturas'          // Nombre de la hoja
    );
 
   if (success) {
@@ -240,7 +240,7 @@ const prevPage = () => {
   
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
       <h2 class="text-4x1 font-semibold text-gray-900 dark:text-white mb-4">
-            Listado de cursos
+            Listado de Asignaturas
         </h2>
         <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
             <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
@@ -259,20 +259,20 @@ const prevPage = () => {
                                 id="simple-search"
                                 v-model="searchTerm"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Buscar curso..."
+                                placeholder="Buscar Asignatura..."
                             >
                         </div>
                     </form>
                 </div>
                 <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                    <!-- @click dispara la función agregarcurso -->
+                    <!-- @click dispara la función agregarAsignatura -->
                     <button
                     type="button"
                     @click="openAddModal"
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar curso
+                    Agregar Asignatura
                     </button>
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -344,7 +344,7 @@ const prevPage = () => {
                          <!-- Mensaje si no hay resultados -->
                          <tr v-if="filteredItems.length === 0">
                             <td colspan="6" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                                No se encontraron cursos.
+                                No se encontraron Asignaturas.
                             </td>
                         </tr>
                     </tbody>
@@ -399,7 +399,7 @@ const prevPage = () => {
     :fields="modalFields"
     :initial-data="currentItem"
     @submit="handleFormSubmit"
-    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear curso'"
+    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear Asignatura'"
   />
 
 </template>

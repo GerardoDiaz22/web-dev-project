@@ -87,7 +87,7 @@ onMounted(() => {
 
 const openAddModal = () => {
   isEditMode.value = false;
-  modalTitle.value = 'Agregar Nuevo grado';
+  modalTitle.value = 'Agregar Nueva Calificación';
   modalFields.value = gradeFields; // Usa la definición de campos
   currentItem.value = {}; // Limpia datos previos, el modal usará valores por defecto
   showModal.value = true;
@@ -95,7 +95,7 @@ const openAddModal = () => {
 
 const openEditModal = (grade) => {
   isEditMode.value = true;
-  modalTitle.value = `Editar ${grade.name}`;
+  modalTitle.value = `Editar Calificación`;
   modalFields.value = gradeFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...grade };

@@ -93,7 +93,7 @@ const openAddModal = () => {
 
 const openEditModal = (persona) => {
   isEditMode.value = true;
-  modalTitle.value = `Editar ${persona.name}`;
+  modalTitle.value = `Editar estudiante`;
   modalFields.value = personaFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...persona };

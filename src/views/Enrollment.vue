@@ -93,7 +93,7 @@ const openAddModal = () => {
 
 const openEditModal = (enrollment) => {
   isEditMode.value = true;
-  modalTitle.value = `Editar ${enrollment.name}`;
+  modalTitle.value = `Editar Inscripción`;
   modalFields.value = enrollmentFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...enrollment };
