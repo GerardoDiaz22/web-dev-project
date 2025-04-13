@@ -199,6 +199,48 @@ const exportToExcel = () => {
 };
 
 
+
+// --- Añadir Estado para Paginación ---
+const currentPage = ref(1);
+const itemsPerPage = ref(10); // Puedes ajustar este valor
+
+// --- Calcular Total de Páginas ---
+const totalPages = computed(() => {
+  return Math.ceil(filteredItems.value.length / itemsPerPage.value);
+});
+
+// --- Calcular Items de la Página Actual ---
+const paginatedItems = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  const endIndex = startIndex + itemsPerPage.value;
+  return filteredItems.value.slice(startIndex, endIndex);
+});
+
+// --- Calcular Rango de Items Mostrados ---
+const displayRange = computed(() => {
+    const totalFiltered = filteredItems.value.length;
+    if (totalFiltered === 0) {
+        return '0';
+    }
+    const start = (currentPage.value - 1) * itemsPerPage.value + 1;
+    const end = Math.min(currentPage.value * itemsPerPage.value, totalFiltered);
+    return `${start}-${end}`;
+});
+
+// --- Funciones de Navegación ---
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+
 </script>
 
 <template>
@@ -271,7 +313,7 @@ const exportToExcel = () => {
                     <tbody>
                    
                         <tr
-                          v-for="item in filteredItems"
+                          v-for="item in paginatedItems"
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
@@ -318,33 +360,41 @@ const exportToExcel = () => {
                     </tbody>
                 </table>
             </div>
-            <!-- Paginación (Simplificada - necesitaría más lógica para ser funcional) -->
-            <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4" aria-label="Table navigation">
+            <nav v-if="!isLoading && filteredItems.length > 0" class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4" aria-label="Table navigation">
                 <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                     Mostrando
-                    <!-- Estos valores deberían ser dinámicos basados en la paginación real -->
-                    <span class="font-semibold text-gray-900 dark:text-white">1-{{ filteredItems.length > 10 ? 10 : filteredItems.length }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ displayRange }}</span>
                     de
                     <span class="font-semibold text-gray-900 dark:text-white">{{ filteredItems.length }}</span>
-                     <!-- (Implementar paginación completa requeriría más estado y lógica) -->
                 </span>
                 <ul class="inline-flex items-stretch -space-x-px">
-                    <!-- Lógica de paginación iría aquí -->
+                    <!-- Botón Anterior -->
                     <li>
-                        <a href="#" class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <button
+                            @click="prevPage"
+                            :disabled="currentPage === 1"
+                            class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <span class="sr-only">Anterior</span>
                             <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                        </a>
+                        </button>
                     </li>
-                    <li>
-                        <a href="#" class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">1</a>
+                    <!-- Indicador de Página Actual (simple) -->
+                     <li>
+                        <span class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
+                           Página {{ currentPage }} de {{ totalPages }}
+                        </span>
                     </li>
-                    <!-- ... más números de página ... -->
+                    <!-- Botón Siguiente -->
                     <li>
-                        <a href="#" class="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                         <button
+                            @click="nextPage"
+                            :disabled="currentPage >= totalPages"
+                            class="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <span class="sr-only">Siguiente</span>
                             <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
-                        </a>
+                        </button>
                     </li>
                 </ul>
             </nav>
