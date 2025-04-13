@@ -8,13 +8,13 @@ import { addDocument } from '@/services/db-handler';
 const db: Firestore = getFirestore();
 
 // Form data for collection
-const enrollment = ref({ id: '', studentId: '', courseId: '' });
+const enrollment = ref({ studentCode: '', courseCode: '' });
 
 // Function to add document to Firestore
 const addEnrollment = async () => {
   try {
     // Set custom ID
-    enrollment.value.id = enrollment.value.studentId + '_' + enrollment.value.courseId;
+    enrollment.value.code = enrollment.value.studentCode + '_' + enrollment.value.courseCode;
 
     // Add enrollment to Firestore
     await addDocument(db, 'enrollments', enrollment.value);
@@ -23,7 +23,7 @@ const addEnrollment = async () => {
     alert('Matricula agregada exitosamente!');
 
     // Reset form fields after submission
-    enrollment.value = { id: '', studentId: '', courseId: '' };
+    enrollment.value = { studentCode: '', courseCode: '' };
   } catch (err) {
     console.error(err);
     // TODO: replace with a modal dialog
@@ -34,8 +34,8 @@ const addEnrollment = async () => {
 
 <template>
   <form @submit.prevent="addEnrollment">
-    <input v-model="enrollment.studentId" type="text" placeholder="ID de Estudiante" required />
-    <input v-model="enrollment.courseId" type="text" placeholder="ID de Asignatura" required />
+    <input v-model="enrollment.studentCode" type="text" placeholder="Código de Estudiante" required />
+    <input v-model="enrollment.courseCode" type="text" placeholder="Código de Asignatura" required />
     <button type="submit">Agregar</button>
   </form>
 </template>

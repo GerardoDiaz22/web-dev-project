@@ -8,7 +8,7 @@ import { addDocument } from '@/services/db-handler';
 const db: Firestore = getFirestore();
 
 // Form data for collection
-const course = ref({ id: '', name: '', description: '' });
+const course = ref({ code: '', name: '' });
 
 // Function to add document to Firestore
 const addCourse = async () => {
@@ -20,7 +20,7 @@ const addCourse = async () => {
     alert('Asignatura agregado exitosamente!');
 
     // Reset form fields after submission
-    course.value = { id: '', name: '', description: '' };
+    course.value = { code: '', name: '' };
   } catch (err) {
     console.error(err);
     // TODO: replace with a modal dialog
@@ -31,9 +31,8 @@ const addCourse = async () => {
 
 <template>
   <form @submit.prevent="addCourse">
-    <input v-model="course.id" type="text" placeholder="ID" required />
+    <input v-model="course.code" type="text" placeholder="Código" required />
     <input v-model="course.name" type="text" placeholder="Nombre" required />
-    <input v-model="course.description" type="text" placeholder="Descripción" required />
     <button type="submit">Agregar</button>
   </form>
 </template>
