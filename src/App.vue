@@ -5,24 +5,12 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { localAuth } from '@/composables/useAuth';
 import NavBar from './components/NavBar.vue';
 
-const router = useRouter();
 const route = useRoute();
-const auth = getAuth();
-const { currentUser } = localAuth();
 
 const showNavbar = computed(() => {
   const hiddenRoutes = ['/login', '/register'];
   return !hiddenRoutes.includes(route.path);
 });
-
-const logout = async () => {
-  try {
-    await signOut(auth);
-    router.push('/');
-  } catch (error) {
-    console.error('Error al cerrar sesión:', error);
-  }
-};
 
 </script>
 
