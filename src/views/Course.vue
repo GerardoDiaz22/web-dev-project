@@ -7,11 +7,11 @@ import { useToast } from 'vue-toastification';
 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
-const personas = ref([]);    // Definir personas donde cargarás los datos
+const courses = ref([]);    // Definir courses donde cargarás los datos
 const searchTerm = ref('');
 
 const db = getFirestore(); 
-const personasCollection = collection(db, 'students'); 
+const coursesCollection = collection(db, 'courses'); 
 
 // Modal
 const showModal = ref(false);
@@ -22,31 +22,32 @@ const isEditMode = ref(false); // Para saber si estamos editando
 
 const toast = useToast();
 
-// Define la estructura de los campos para agregar estudiantes en el modal
-const personaFields = [
-  { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
-  { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
-  { key: 'id', label: 'id', type: 'text', required: true, placeholder: 'Ej: 25' },
+// Define la estructura de los campos para agregar cursos en el modal
+const courseFields = [
+{ key: 'id', label: 'id', type: 'text', required: true, placeholder: 'Ej: 25' },
+  { key: 'name', label: 'Nombre', type: 'text', required: true, placeholder: 'Nombre' },
+  { key: 'description', label: 'Descripción', type: 'text', required: true, placeholder: 'Descripción' },
 ];
 
-const personaEditFields = [
-  { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
-  { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
+const courseEditFields = [
+{ key: 'id', label: 'id', type: 'text', required: true, placeholder: 'Ej: 25' },
+  { key: 'name', label: 'Nombre', type: 'text', required: true, placeholder: 'Nombre' },
+  { key: 'description', label: 'Descripción', type: 'text', required: true, placeholder: 'Descripción' },
 ];
 
-// Cargar personas desde Firestore
-const fetchPersonas = async () => {
+// Cargar courses desde Firestore
+const fetchcourse = async () => {
     isLoading.value = true;
     console.log("hiiiiiiiiiiiiiiii")
     try {
-        const querySnapshot = await getDocs(personasCollection);
-        personas.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("query snapshot",personas.value)
+        const querySnapshot = await getDocs(coursesCollection);
+        courses.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("query snapshot",courses.value)
   
 
 
     } catch (error) {
-        console.error("Error fetching personas: ", error);
+        console.error("Error fetching courses: ", error);
     } finally {
         isLoading.value = false;
         await nextTick();
@@ -57,10 +58,10 @@ const fetchPersonas = async () => {
 // Filtra los items basados en el término de búsqueda
 const filteredItems = computed(() => {
   if (!searchTerm.value) {
-    return personas.value;
+    return courses.value;
   }
   const lowerSearch = searchTerm.value.toLowerCase();
-  return personas.value.filter(item =>
+  return courses.value.filter(item =>
     Object.values(item).some(value => // Busca en todos los valores del objeto
       String(value).toLowerCase().includes(lowerSearch)
     )
@@ -78,7 +79,7 @@ function mostrarItem(item) {
 
 // carga de datos al montar
 onMounted(() => {
-  fetchPersonas(); 
+  fetchcourse(); 
   initFlowbite();
 
   
@@ -89,18 +90,18 @@ onMounted(() => {
 
 const openAddModal = () => {
   isEditMode.value = false;
-  modalTitle.value = 'Agregar Nuevo Estudiante';
-  modalFields.value = personaFields; // Usa la definición de campos
+  modalTitle.value = 'Agregar Nuevo curso';
+  modalFields.value = courseFields; // Usa la definición de campos
   currentItem.value = {}; // Limpia datos previos, el modal usará valores por defecto
   showModal.value = true;
 };
 
-const openEditModal = (persona) => {
+const openEditModal = (course) => {
   isEditMode.value = true;
-  modalTitle.value = `Editar ${persona.name}`;
-  modalFields.value = personaEditFields; 
+  modalTitle.value = `Editar ${course.name}`;
+  modalFields.value = courseEditFields; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
-  currentItem.value = { ...persona };
+  currentItem.value = { ...course };
   showModal.value = true;
 };
 
@@ -117,28 +118,29 @@ const handleFormSubmit = async (formData) => {
       name: formData.name, 
 
     };
-      const personaDocRef = doc(db, 'students', currentItem.value.id);
-      console.log("esto es una prueba",personaDocRef)
-      await updateDoc(personaDocRef, formData); 
+      const courseDocRef = doc(db, 'courses', toString(currentItem.value.id));
+      console.log("esto es una prueba",courseDocRef)
+      await updateDoc(courseDocRef, dataToUpdate); 
 
-       console.log('Persona actualizada:', currentItem.value.id);
-       toast.success(`Estudiante "${formData.name}" actualizado exitosamente!`);
+       console.log('course actualizada:', currentItem.value.id);
+       toast.success("Curso actualizado exitosamente!")
 
     } else {
       // --- Modo Creación ---
       console.log("esto es formdata",formData)
-      const docRef = await addDoc(personasCollection, formData);
+      const docRef = await addDoc(coursesCollection, formData);
       // Añadir el nuevo item a la lista local con el ID devuelto
-      personas.value.push({ id: docRef.id, ...formData });
-      console.log('Persona agregada con ID:', docRef.id);
+      courses.value.push({ id: docRef.id, ...formData });
+      console.log('course agregada con ID:', docRef.id);
+      toast.success("Curso agregado exitosamente!")
+
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
     currentItem.value = null; // Limpiar item actual
 
-    toast.success(`Estudiante "${formData.name}" agregado exitosamente!`);
 
   } catch (error) {
-    console.error("Error guardando persona: ", error);
+    console.error("Error guardando course: ", error);
     // Mostrar mensaje de error al usuario
   } finally {
      isLoading.value = false;
@@ -149,20 +151,20 @@ const handleFormSubmit = async (formData) => {
 };
 
 // Función para eliminar (ejemplo básico)
-const eliminarPersona = async (persona) => {
-  if (!confirm(`¿Estás seguro de que quieres eliminar a ${persona.nombre}?`)) {
+const eliminarcourse = async (course) => {
+  if (!confirm(`¿Estás seguro de que quieres eliminar a ${course.nombre}?`)) {
     return;
   }
   isLoading.value = true;
   try {
-    const personaDocRef = doc(db, 'students', persona.id);
-    await deleteDoc(personaDocRef);
+    const courseDocRef = doc(db, 'courses', course.id);
+    await deleteDoc(courseDocRef);
     // Eliminar de la lista local
-    personas.value = personas.value.filter(p => p.id !== persona.id);
-    console.log('Persona eliminada:', persona.id);
-    toast.success("Estudiante eliminado exitosamente!")
+    courses.value = courses.value.filter(p => p.id !== course.id);
+    console.log('course eliminada:', course.id);
+    toast.success("Curso eliminado exitosamente!")
   } catch (error) {
-     console.error("Error eliminando persona: ", error);
+     console.error("Error eliminando course: ", error);
      // Mostrar mensaje de error
   } finally {
       isLoading.value = false;
@@ -180,7 +182,7 @@ const eliminarPersona = async (persona) => {
   
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
       <h2 class="text-4x1 font-semibold text-gray-900 dark:text-white mb-4">
-            Listado de Estudiantes
+            Listado de cursos
         </h2>
         <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
             <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
@@ -199,20 +201,20 @@ const eliminarPersona = async (persona) => {
                                 id="simple-search"
                                 v-model="searchTerm"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Buscar estudiante..."
+                                placeholder="Buscar curso..."
                             >
                         </div>
                     </form>
                 </div>
                 <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                    <!-- @click dispara la función agregarEstudiante -->
+                    <!-- @click dispara la función agregarcurso -->
                     <button
                     type="button"
                     @click="openAddModal"
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar Estudiante
+                    Agregar curso
                     </button>
 
                     <!-- <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -247,7 +249,8 @@ const eliminarPersona = async (persona) => {
                         <tr>
                             <th scope="col" class="px-4 py-3">ID</th>
                             <th scope="col" class="px-4 py-3">Nombre</th> 
-                            <th scope="col" class="px-4 py-3">Edad</th> 
+                            <th scope="col" class="px-4 py-3">Descripción</th> 
+
                             <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">Acciones</span>
                             </th>
@@ -261,8 +264,9 @@ const eliminarPersona = async (persona) => {
                           class="border-b dark:border-gray-700"
                         >
                             <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.id }}</th>
-                            <td class="px-4 py-3">{{ item.name }}</td> 
-                            <td class="px-4 py-3">{{ item.age }}</td>
+                            <td class="px-4 py-3">{{ item.name }}</td>
+                            <td class="px-4 py-3">{{ item.description }}</td>
+
                             <td class="px-4 py-3 flex items-center justify-end">
                      
                                 <button
@@ -289,7 +293,7 @@ const eliminarPersona = async (persona) => {
                                         </li>
                                     </ul>
                                     <div class="py-1">
-                                        <a href="#" @click.prevent="eliminarPersona(item)" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Eliminar</a>
+                                        <a href="#" @click.prevent="eliminarcourse(item)" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Eliminar</a>
                                     </div>
                                 </div>
                             </td>
@@ -297,7 +301,7 @@ const eliminarPersona = async (persona) => {
                          <!-- Mensaje si no hay resultados -->
                          <tr v-if="filteredItems.length === 0">
                             <td colspan="6" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                                No se encontraron estudiantes.
+                                No se encontraron cursos.
                             </td>
                         </tr>
                     </tbody>
@@ -344,7 +348,7 @@ const eliminarPersona = async (persona) => {
     :fields="modalFields"
     :initial-data="currentItem"
     @submit="handleFormSubmit"
-    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear Estudiante'"
+    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear curso'"
   />
 
 </template>
