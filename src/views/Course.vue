@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted,nextTick,  } from 'vue';
+import { ref, computed, onMounted,nextTick, watch  } from 'vue';
 import { initFlowbite } from 'flowbite';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
 import GenericFormModal from '@/components/GenericFormModal.vue';
 import { useToast } from 'vue-toastification';
 import { generateExcelReport } from '@/utils/excelExporter'; 
+import { getAllDocuments, addDocument, editDocument, deleteDocument} from '@/services/db-handler.ts' 
 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
@@ -12,7 +13,6 @@ const courses = ref([]);    // Definir courses donde cargarás los datos
 const searchTerm = ref('');
 
 const db = getFirestore(); 
-const coursesCollection = collection(db, 'courses'); 
 
 // Modal
 const showModal = ref(false);
@@ -25,30 +25,33 @@ const toast = useToast();
 
 // Define la estructura de los campos para agregar Asignaturas en el modal
 const courseFields = [
+  { key: 'code', label: 'Código', type: 'text', required: true, placeholder: 'Código' },
   { key: 'name', label: 'Nombre', type: 'text', required: true, placeholder: 'Nombre' },
-  { key: 'description', label: 'Descripción', type: 'text', required: true, placeholder: 'Descripción' },
 ];
 
+const courseFieldsEdit = [
+  { key: 'name', label: 'Nombre', type: 'text', required: true, placeholder: 'Nombre' },
+];
 
 // Cargar courses desde Firestore
 const fetchcourse = async () => {
     isLoading.value = true;
     console.log("hiiiiiiiiiiiiiiii")
     try {
-        const querySnapshot = await getDocs(coursesCollection);
-        courses.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("query snapshot",courses.value)
+        courses.value = await getAllDocuments(db, 'courses');
   
 
 
     } catch (error) {
         console.error("Error fetching courses: ", error);
+        courses.value = [];
     } finally {
         isLoading.value = false;
         await nextTick();
         initFlowbite();
     }
 };
+
 
 // Filtra los items basados en el término de búsqueda
 const filteredItems = computed(() => {
@@ -94,35 +97,31 @@ const openAddModal = () => {
 const openEditModal = (course) => {
   isEditMode.value = true;
   modalTitle.value = `Editar Asignatura`;
-  modalFields.value = courseFields; 
+  modalFields.value = courseFieldsEdit; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...course };
   showModal.value = true;
 };
 
+
 const handleFormSubmit = async (formData) => {
   isLoading.value = true; // Mostrar indicador mientras se guarda
   console.log("entro aqui")
   try {
-    if (isEditMode.value && currentItem.value?.id) {
-      // --- Modo Edición ---
-      console.log("esto es current",currentItem.value.id)
-
-      const courseDocRef = doc(db, 'courses', currentItem.value.id);
-      console.log("esto es una prueba",courseDocRef)
-      await updateDoc(courseDocRef, formData); 
-
-       console.log('course actualizada:', currentItem.value.id);
-       toast.success("Asignatura actualizado exitosamente!")
+   if (isEditMode.value && currentItem.value?.code) { 
+      
+      await editDocument(db, 'courses', currentItem.value.code, { ...formData });
+      toast.success(`Asignatura "${formData.name}" actualizada exitosamente!`);
 
     } else {
       // --- Modo Creación ---
-      console.log("esto es formdata",formData)
-      const docRef = await addDoc(coursesCollection, formData);
-      // Añadir el nuevo item a la lista local con el ID devuelto
-      courses.value.push({ id: docRef.id, ...formData });
-      console.log('course agregada con ID:', docRef.id);
-      toast.success("Asignatura agregado exitosamente!")
+      try{
+        await addDocument(db, 'courses', formData);
+        toast.success(`Asignatura "${formData.name}" agregada exitosamente!`);
+      }
+      catch (error){
+        toast.error(error);
+      }
 
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
@@ -148,12 +147,12 @@ const eliminarcourse = async (course) => {
   }
   isLoading.value = true;
   try {
-    const courseDocRef = doc(db, 'courses', course.id);
-    await deleteDoc(courseDocRef);
+    await deleteDocument(db, 'courses', course.code);
+    toast.success(`Asignatura "${course.name}" eliminada exitosamente!`);
+
     // Eliminar de la lista local
     courses.value = courses.value.filter(p => p.id !== course.id);
     console.log('course eliminada:', course.id);
-    toast.success("Asignatura eliminado exitosamente!")
   } catch (error) {
      console.error("Error eliminando course: ", error);
      // Mostrar mensaje de error
@@ -171,8 +170,8 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
+    'Código':'code',
     'Asignatura': 'name',
-    'Descripción': 'description',
   };
 
   // Llama a la función reutilizable
@@ -232,6 +231,12 @@ const prevPage = () => {
   }
 };
 
+watch(paginatedItems, () => {
+    initFlowbite(); 
+  },
+  { flush: 'post' }
+);
+
 </script>
 
 <template>
@@ -272,7 +277,7 @@ const prevPage = () => {
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar Asignatura
+                    Agregar 
                     </button>
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -293,8 +298,8 @@ const prevPage = () => {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
+                            <th scope="col" class="px-4 py-3">Código</th> 
                             <th scope="col" class="px-4 py-3">Nombre</th> 
-                            <th scope="col" class="px-4 py-3">Descripción</th> 
 
                             <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">Acciones</span>
@@ -304,12 +309,12 @@ const prevPage = () => {
                     <tbody>
                    
                         <tr
-                          v-for="item in filteredItems"
+                          v-for="item in paginatedItems"
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.name }}</th>
-                            <td class="px-4 py-3">{{ item.description }}</td>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.code }}</th>
+                            <td class="px-4 py-3">{{ item.name }}</td>
 
                             <td class="px-4 py-3 flex items-center justify-end">
                      

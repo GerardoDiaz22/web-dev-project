@@ -1,18 +1,21 @@
 <script setup>
-import { ref, computed, onMounted,nextTick,  } from 'vue';
+import { ref, computed, onMounted,nextTick, watch } from 'vue';
 import { initFlowbite } from 'flowbite';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
 import GenericFormModal from '@/components/GenericFormModal.vue';
 import { useToast } from 'vue-toastification';
 import { generateExcelReport } from '@/utils/excelExporter'; 
+import { getAllDocuments, addDocument, editDocument, deleteDocument} from '@/services/db-handler.ts' 
 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
-const enrollments = ref([]);    // Definir enrollments donde cargarás los datos
+const enrollments = ref([]);   
 const searchTerm = ref('');
+var studentOptions = ref([]);   
+var courseOptions = ref([]);   
+
 
 const db = getFirestore(); 
-const enrollmentsCollection = collection(db, 'enrollments'); 
 
 // Modal
 const showModal = ref(false);
@@ -24,31 +27,69 @@ const isEditMode = ref(false); // Para saber si estamos editando
 const toast = useToast();
 
 
-// Define la estructura de los campos para agregar Inscripcións en el modal
-const enrollmentFields = [
-  { key: 'studentId', label: 'Estudiante', type: 'text', required: true, placeholder: 'ID de Estudiante' },
-  { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
-];
 
 // Cargar enrollments desde Firestore
-const fetchenrollment = async () => {
+const fetchenrollment = async () => { // Renombrado para claridad
     isLoading.value = true;
-    console.log("hiiiiiiiiiiiiiiii")
+    // Limpiar opciones existentes por si se recarga
+    studentOptions.value = [];
+    courseOptions.value = [];
+    console.log("Iniciando carga de datos..."); // Log para seguir el flujo
     try {
-        const querySnapshot = await getDocs(enrollmentsCollection);
-        enrollments.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("query snapshot",enrollments.value)
-  
+        
+
+        const studentDocs = await    getAllDocuments(db, 'students')
+        const courseDocs = await  getAllDocuments(db, 'courses')
+    
+
+   
+
+        const studentPlaceholder = { value: '', text: '-- Seleccione Estudiante --' };
+        studentOptions.value = [
+            studentPlaceholder,
+            ...studentDocs.map(student => ({
+           
+                value: student.code, 
+                text: `${student.name || '??'} (${student.code || '??'})` 
+              
+            }))
+        ];
+        console.log("Opciones de Estudiante generadas:", studentOptions.value);
+
+
+        const coursePlaceholder = { value: '', text: '-- Seleccione Asignatura --' };
+        courseOptions.value = [
+            coursePlaceholder,
+            ...courseDocs.map(course => ({
+                value: course.code, 
+                text: `${course.name || '??'} (${course.code || '??'})`
+            }))
+        ];
+        console.log("Opciones de Asignatura generadas:", courseOptions.value.length);
+        const enrollmentDocs = await  getAllDocuments(db, 'enrollments')
+        enrollments.value = enrollmentDocs;
+        console.log("Inscripciones cargadas:", enrollments.value);
 
 
     } catch (error) {
-        console.error("Error fetching enrollments: ", error);
+        console.error("Error fetching data: ", error);
+        toast.error("Error al cargar datos iniciales.");
+        enrollments.value = []; 
+
     } finally {
-        isLoading.value = false;
+        isLoading.value = false; 
+        console.log("Carga de datos finalizada.");
         await nextTick();
-        initFlowbite();
+        try {
+            initFlowbite();
+            console.log("Flowbite inicializado después de carga y nextTick.");
+        } catch (fbError) {
+            console.warn("Error inicializando Flowbite:", fbError);
+        }
     }
 };
+
+
 
 // Filtra los items basados en el término de búsqueda
 const filteredItems = computed(() => {
@@ -66,12 +107,6 @@ const filteredItems = computed(() => {
 
 
 
-// function mostrarItem(item) {
-//   console.log('Mostrar:', item);
-//   // Lógica para mostrar detalles
-// }
-
-
 // carga de datos al montar
 onMounted(() => {
   fetchenrollment(); 
@@ -86,7 +121,22 @@ onMounted(() => {
 const openAddModal = () => {
   isEditMode.value = false;
   modalTitle.value = 'Agregar Nuevo Inscripción';
-  modalFields.value = enrollmentFields; // Usa la definición de campos
+  modalFields.value = [
+    {
+      key: 'studentCode',
+      label: 'Estudiante',
+      type: 'select',
+      required: true,
+      options: studentOptions.value
+    },
+    {
+      key: 'courseCode',
+      label: 'Asignatura',
+      type: 'select',
+      required: true,
+      options: courseOptions.value 
+    },
+     ]
   currentItem.value = {}; // Limpia datos previos, el modal usará valores por defecto
   showModal.value = true;
 };
@@ -94,7 +144,22 @@ const openAddModal = () => {
 const openEditModal = (enrollment) => {
   isEditMode.value = true;
   modalTitle.value = `Editar Inscripción`;
-  modalFields.value = enrollmentFields; 
+  modalFields.value = [
+    {
+      key: 'studentCode',
+      label: 'Estudiante',
+      type: 'select',
+      required: true,
+      options: studentOptions.value
+    },
+    {
+      key: 'courseCode',
+      label: 'Asignatura',
+      type: 'select',
+      required: true,
+      options: courseOptions.value 
+    },
+     ]; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...enrollment };
   showModal.value = true;
@@ -104,26 +169,31 @@ const handleFormSubmit = async (formData) => {
   isLoading.value = true; // Mostrar indicador mientras se guarda
   console.log("entro aqui")
   try {
-    if (isEditMode.value && currentItem.value?.id) {
+    if (isEditMode.value && currentItem.value?.studentCode && currentItem.value?.courseCode) { 
       // --- Modo Edición ---
-      console.log("esto es current",currentItem.value.id)
-      console.log("formdata",formData)
-
-      const enrollmentDocRef = doc(db, 'enrollments', currentItem.value.id);
-      console.log("esto es una prueba",enrollmentDocRef)
-      await updateDoc(enrollmentDocRef, formData); 
-
-       console.log('enrollment actualizada:', currentItem.value.id);
-       toast.success("Inscripción actualizada exitosamente!")
+      console.log("currentItem.value.code",currentItem.value.code)
+      console.log("formData",formData)
+      try{
+        await editDocument(db, 'enrollments', currentItem.value.code, { ...formData },'group');
+        toast.success("Inscripción actualizada exitosamente!")
+      }
+      catch(error){
+        toast.error(error);
+      }
 
     } else {
       // --- Modo Creación ---
-      console.log("esto es formdata",formData)
-      const docRef = await addDoc(enrollmentsCollection, formData);
-      // Añadir el nuevo item a la lista local con el ID devuelto
-      enrollments.value.push({ id: docRef.id, ...formData });
-      console.log('enrollment agregada con ID:', docRef.id);
+      console.log("formData",formData)
+      try{
+        await addDocument(db, 'enrollments', formData,"group");
       toast.success("Inscripción agregada exitosamente!")
+      enrollments.value.push({ ...formData });
+      }
+      catch(error){
+        console.log("errrooooor",error)
+        toast.error(error);
+
+      }
 
     }
     fetchenrollment()
@@ -172,8 +242,8 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'Estudiante': 'studentId',
-    'Asignatura': 'courseId',
+    'Estudiante': 'courseCode',
+    'Asignatura': 'studentCode',
   };
 
   // Llama a la función reutilizable
@@ -190,6 +260,7 @@ const exportToExcel = () => {
       toast.error("No se pudo generar el reporte (verifique si hay datos).");
   }
 };
+
 
 
 
@@ -234,6 +305,12 @@ const prevPage = () => {
   }
 };
 
+watch(paginatedItems, () => {
+    initFlowbite(); 
+  },
+  { flush: 'post' }
+);
+
 </script>
 
 <template>
@@ -274,7 +351,7 @@ const prevPage = () => {
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar inscripción
+                    Agregar
                     </button>
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -306,12 +383,12 @@ const prevPage = () => {
                     <tbody>
                    
                         <tr
-                          v-for="item in filteredItems"
+                          v-for="item in paginatedItems"
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.studentId }}</th>
-                            <td class="px-4 py-3">{{ item.courseId }}</td>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.studentCode }}</th>
+                            <td class="px-4 py-3">{{ item.courseCode }}</td>
 
                             <td class="px-4 py-3 flex items-center justify-end">
                      

@@ -1,18 +1,17 @@
 <script setup>
-import { ref, computed, onMounted,nextTick,  } from 'vue';
+import { ref, computed, onMounted,nextTick, watch  } from 'vue';
 import { initFlowbite } from 'flowbite';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
 import GenericFormModal from '@/components/GenericFormModal.vue';
 import { useToast } from 'vue-toastification';
 import { generateExcelReport } from '@/utils/excelExporter'; 
-
+import { getAllDocuments, addDocument, editDocument, deleteDocument} from '@/services/db-handler.ts' 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
 const personas = ref([]);    // Definir personas donde cargarás los datos
 const searchTerm = ref('');
 
 const db = getFirestore(); 
-const personasCollection = collection(db, 'students'); 
 
 // Modal
 const showModal = ref(false);
@@ -27,22 +26,27 @@ const toast = useToast();
 const personaFields = [
   { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
   { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
+  { key: 'code', label: 'Cédula', type: 'text', required: true, placeholder: 'Ej: 30077008' },
+
 ];
+
+const personaFieldsEdit = [
+  { key: 'name', label: 'Nombre Completo', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
+  { key: 'age', label: 'Edad', type: 'number', required: true, placeholder: 'Ej: 25' },
+];
+
 
 // Cargar personas desde Firestore
 const fetchPersonas = async () => {
     isLoading.value = true;
     console.log("hiiiiiiiiiiiiiiii")
     try {
-        const querySnapshot = await getDocs(personasCollection);
-        personas.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("query snapshot",personas.value)
-        console.log("query snapsho2t",querySnapshot.docs)
-
-
+        personas.value = await getAllDocuments(db, 'students');
+        console.log("Personas fetched:", personas.value);
 
     } catch (error) {
         console.error("Error fetching personas: ", error);
+        personas.value = []; 
     } finally {
         isLoading.value = false;
         await nextTick();
@@ -94,7 +98,7 @@ const openAddModal = () => {
 const openEditModal = (persona) => {
   isEditMode.value = true;
   modalTitle.value = `Editar estudiante`;
-  modalFields.value = personaFields; 
+  modalFields.value = personaFieldsEdit; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...persona };
   showModal.value = true;
@@ -104,29 +108,24 @@ const handleFormSubmit = async (formData) => {
   isLoading.value = true; // Mostrar indicador mientras se guarda
   console.log("entro aqui")
   try {
-    if (isEditMode.value && currentItem.value?.id) {
-      // --- Modo Edición ---
-      console.log("esto es current",currentItem.value.id)
-      console.log("formdata",formData)
-      const dataToUpdate = {
-      name: formData.name, 
-
-    };
-      const personaDocRef = doc(db, 'students', currentItem.value.id);
-      console.log("esto es una prueba",personaDocRef)
-      await updateDoc(personaDocRef, formData); 
-
-       console.log('Persona actualizada:', currentItem.value.id);
-       toast.success(`Estudiante "${formData.name}" actualizado exitosamente!`);
+    if (isEditMode.value && currentItem.value?.code) { 
+            // --- Modo Edición ---
+            const studentCode = currentItem.value.code;
+            const dataToUpdate = { ...formData };
+            await editDocument(db, 'students', studentCode, dataToUpdate);
+            toast.success(`Estudiante "${formData.name}" actualizado exitosamente!`);
 
     } else {
       // --- Modo Creación ---
-      console.log("esto es formdata",formData)
-      const docRef = await addDoc(personasCollection, formData);
-      // Añadir el nuevo item a la lista local con el ID devuelto
-      personas.value.push({ id: docRef.id, ...formData });
-      console.log('Persona agregada con ID:', docRef.id);
-      toast.success(`Estudiante "${formData.name}" agregado exitosamente!`);
+      try{
+        await addDocument(db, 'students', formData);
+        toast.success(`Estudiante "${formData.name}" agregado exitosamente!`);
+      }
+      catch (error){
+        toast.error(error);
+
+      }
+   
 
     }
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
@@ -153,13 +152,9 @@ const eliminarPersona = async (persona) => {
   }
   isLoading.value = true;
   try {
-    const personaDocRef = doc(db, 'students', persona.id);
-    console.log("ira",persona)
-    await deleteDoc(personaDocRef);
-    // Eliminar de la lista local
+    await deleteDocument(db, 'students', persona.code);
+    toast.success(`Estudiante "${persona.name}" eliminado exitosamente!`);
     personas.value = personas.value.filter(p => p.id !== persona.id);
-    console.log('Persona eliminada:', persona.id);
-    toast.success("Estudiante eliminado exitosamente!")
   } catch (error) {
      console.error("Error eliminando persona: ", error);
      // Mostrar mensaje de error
@@ -176,6 +171,7 @@ const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
+    'Cédula':'code',
     'Nombre': 'name',
     'Edad': 'age'
   };
@@ -238,6 +234,12 @@ const prevPage = () => {
 };
 
 
+watch(paginatedItems, () => {
+    initFlowbite(); 
+  },
+  { flush: 'post' }
+);
+
 </script>
 
 <template>
@@ -278,7 +280,7 @@ const prevPage = () => {
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar Estudiante
+                    Agregar
                     </button>
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -299,6 +301,7 @@ const prevPage = () => {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
+                            <th scope="col" class="px-4 py-3">Cédula</th> 
                             <th scope="col" class="px-4 py-3">Nombre</th> 
                             <th scope="col" class="px-4 py-3">Edad</th> 
                             <th scope="col" class="px-4 py-3">
@@ -313,7 +316,8 @@ const prevPage = () => {
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.name }}</th>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.code }}</th>
+                            <td class="px-4 py-3">{{ item.name }}</td> 
                             <td class="px-4 py-3">{{ item.age }}</td> 
                             <td class="px-4 py-3 flex items-center justify-end">
                      

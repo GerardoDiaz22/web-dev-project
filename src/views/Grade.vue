@@ -1,18 +1,21 @@
 <script setup>
-import { ref, computed, onMounted,nextTick,  } from 'vue';
+import { ref, computed, onMounted,nextTick, watch } from 'vue';
 import { initFlowbite } from 'flowbite';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getFirestore } from 'firebase/firestore';
 import GenericFormModal from '@/components/GenericFormModal.vue';
 import { useToast } from 'vue-toastification';
 import { generateExcelReport } from '@/utils/excelExporter'; 
+import { getAllDocuments, addDocument, editDocument, deleteDocument} from '@/services/db-handler.ts' 
 
 //Tabla
 const isLoading = ref(true); // Definir isLoading
-const grades = ref([]);    // Definir grades donde cargarás los datos
+const grades = ref([]);   
 const searchTerm = ref('');
+var studentOptions = ref([]);   
+var courseOptions = ref([]);   
+
 
 const db = getFirestore(); 
-const gradesCollection = collection(db, 'grades'); 
 
 // Modal
 const showModal = ref(false);
@@ -24,33 +27,68 @@ const isEditMode = ref(false); // Para saber si estamos editando
 const toast = useToast();
 
 
-// Define la estructura de los campos para agregar grados en el modal
-const gradeFields = [
-  { key: 'studentId', label: 'Estudiante', type: 'text', required: true, placeholder: 'ID de Estudiante' },
-  { key: 'courseId', label: 'Curso', type: 'text', required: true, placeholder: 'ID de Asignatura' },
-  { key: 'value', label: 'Calificación', type: 'number', required: true, placeholder: 'Calificación' },
-];
-
 
 // Cargar grades desde Firestore
-const fetchGrade = async () => {
+const fetchgrade = async () => { // Renombrado para claridad
     isLoading.value = true;
-    console.log("hiiiiiiiiiiiiiiii")
+    // Limpiar opciones existentes por si se recarga
+    studentOptions.value = [];
+    courseOptions.value = [];
+    console.log("Iniciando carga de datos..."); // Log para seguir el flujo
     try {
-        const querySnapshot = await getDocs(gradesCollection);
-        grades.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("query snapshot",grades.value)
-  
+        
+        const studentDocs = await    getAllDocuments(db, 'students')
+        const courseDocs = await  getAllDocuments(db, 'courses')
+    
 
+        
+
+
+        const studentPlaceholder = { value: '', text: '-- Seleccione Estudiante --' };
+        studentOptions.value = [
+            studentPlaceholder,
+            ...studentDocs.map(student => ({
+           
+                value: student.code, 
+                text: `${student.name || '??'} (${student.code || '??'})` 
+              
+            }))
+        ];
+        console.log("Opciones de Estudiante generadas:", studentOptions.value);
+
+
+        const coursePlaceholder = { value: '', text: '-- Seleccione Asignatura --' };
+        courseOptions.value = [
+            coursePlaceholder,
+            ...courseDocs.map(course => ({
+                value: course.code, 
+                text: `${course.name || '??'} (${course.code || '??'})`
+            }))
+        ];
+        console.log("Opciones de Asignatura generadas:", courseOptions.value.length);
+        const gradeDocs = await  getAllDocuments(db, 'grades')
+        grades.value = gradeDocs;
+        console.log("Calificaciones cargadas:", grades.value);
 
     } catch (error) {
-        console.error("Error fetching grades: ", error);
+        console.error("Error fetching data: ", error);
+        toast.error("Error al cargar datos iniciales.");
+        grades.value = []; 
+
     } finally {
-        isLoading.value = false;
+        isLoading.value = false; 
+        console.log("Carga de datos finalizada.");
         await nextTick();
-        initFlowbite();
+        try {
+            initFlowbite();
+            console.log("Flowbite inicializado después de carga y nextTick.");
+        } catch (fbError) {
+            console.warn("Error inicializando Flowbite:", fbError);
+        }
     }
 };
+
+
 
 // Filtra los items basados en el término de búsqueda
 const filteredItems = computed(() => {
@@ -68,15 +106,9 @@ const filteredItems = computed(() => {
 
 
 
-// function mostrarItem(item) {
-//   console.log('Mostrar:', item);
-//   // Lógica para mostrar detalles
-// }
-
-
 // carga de datos al montar
 onMounted(() => {
-  fetchGrade(); 
+  fetchgrade(); 
   initFlowbite();
 
   
@@ -87,8 +119,26 @@ onMounted(() => {
 
 const openAddModal = () => {
   isEditMode.value = false;
-  modalTitle.value = 'Agregar Nueva Calificación';
-  modalFields.value = gradeFields; // Usa la definición de campos
+  modalTitle.value = 'Agregar Nueva calificación';
+  modalFields.value = [
+    {
+      key: 'studentCode',
+      label: 'Estudiante',
+      type: 'select',
+      required: true,
+      options: studentOptions.value
+    },
+    {
+      key: 'courseCode',
+      label: 'Asignatura',
+      type: 'select',
+      required: true,
+      options: courseOptions.value 
+    },
+
+    { key: 'value', label: 'Nota', type: 'text', required: true, placeholder: 'Ej: 20' },
+
+     ]
   currentItem.value = {}; // Limpia datos previos, el modal usará valores por defecto
   showModal.value = true;
 };
@@ -96,7 +146,24 @@ const openAddModal = () => {
 const openEditModal = (grade) => {
   isEditMode.value = true;
   modalTitle.value = `Editar Calificación`;
-  modalFields.value = gradeFields; 
+  modalFields.value = [
+    {
+      key: 'studentCode',
+      label: 'Estudiante',
+      type: 'select',
+      required: true,
+      options: studentOptions.value
+    },
+    {
+      key: 'courseCode',
+      label: 'Asignatura',
+      type: 'select',
+      required: true,
+      options: courseOptions.value 
+    },
+    { key: 'value', label: 'Nota', type: 'text', required: true, placeholder: 'Ej: 20' },
+
+     ]; 
   // Pasa una copia de los datos para no modificar el original hasta guardar
   currentItem.value = { ...grade };
   showModal.value = true;
@@ -106,30 +173,37 @@ const handleFormSubmit = async (formData) => {
   isLoading.value = true; // Mostrar indicador mientras se guarda
   console.log("entro aqui")
   try {
-    if (isEditMode.value && currentItem.value?.id) {
+    if (isEditMode.value && currentItem.value?.studentCode && currentItem.value?.courseCode) { 
       // --- Modo Edición ---
-      console.log("esto es current",currentItem.value.id)
-      console.log("formdata",formData)
-
-      const gradeDocRef = doc(db, 'grades', currentItem.value.id);
-      await updateDoc(gradeDocRef, formData); 
-
-       console.log('grade actualizada:', currentItem.value.id);
-       toast.success("Calificación actualizada exitosamente!")
+      console.log("currentItem.value.code",currentItem.value.code)
+      console.log("formData",formData)
+      try{
+        await editDocument(db, 'grades', currentItem.value.code, { ...formData },'group');
+        toast.success("Calificación actualizada exitosamente!")
+      }
+      catch(error){
+        toast.error(error);
+      }
 
     } else {
       // --- Modo Creación ---
-      console.log("esto es formdata",formData)
-      const docRef = await addDoc(gradesCollection, formData);
-      // Añadir el nuevo item a la lista local con el ID devuelto
-      grades.value.push({ id: docRef.id, ...formData });
-      console.log('grade agregada con ID:', docRef.id);
+      console.log("formData",formData)
+      try{
+        await addDocument(db, 'grades', formData,"group");
       toast.success("Calificación agregada exitosamente!")
+      grades.value.push({ ...formData });
+      }
+      catch(error){
+        console.log("errrooooor",error)
+        toast.error(error);
+
+      }
 
     }
+    fetchgrade()
     showModal.value = false; // Cierra el modal (aunque el modal ya lo hace al emitir)
     currentItem.value = null; // Limpiar item actual
-    fetchGrade()
+
 
   } catch (error) {
     console.error("Error guardando grade: ", error);
@@ -144,7 +218,7 @@ const handleFormSubmit = async (formData) => {
 
 // Función para eliminar (ejemplo básico)
 const eliminargrade = async (grade) => {
-  if (!confirm(`¿Estás seguro de que quieres eliminar la calificacion con id ${grade.id}?`)) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar esta calificación?`)) {
     return;
   }
   isLoading.value = true;
@@ -154,7 +228,7 @@ const eliminargrade = async (grade) => {
     // Eliminar de la lista local
     grades.value = grades.value.filter(p => p.id !== grade.id);
     console.log('grade eliminada:', grade.id);
-    toast.success("Calificación eliminada exitosamente!")
+    toast.success("Calificación eliminado exitosamente!")
 
   } catch (error) {
      console.error("Error eliminando grade: ", error);
@@ -167,15 +241,15 @@ const eliminargrade = async (grade) => {
   }
 };
 
-
 //Función para Exportar a Excel
 const exportToExcel = () => {
   const dataToExport = filteredItems.value;
 
   const columnMapping = {
-    'Estudiante': 'studentId',
-    'Asignatura': 'courseId',
-    'Calificación':'value'
+    'Estudiante': 'courseCode',
+    'Asignatura': 'studentCode',
+    'Nota':'value'
+
   };
 
   // Llama a la función reutilizable
@@ -192,6 +266,7 @@ const exportToExcel = () => {
       toast.error("No se pudo generar el reporte (verifique si hay datos).");
   }
 };
+
 
 
 
@@ -236,6 +311,12 @@ const prevPage = () => {
   }
 };
 
+watch(paginatedItems, () => {
+    initFlowbite(); 
+  },
+  { flush: 'post' }
+);
+
 </script>
 
 <template>
@@ -244,7 +325,7 @@ const prevPage = () => {
   
     <div class="mx-auto max-w-screen-xl px-4 lg:px-12">
       <h2 class="text-4x1 font-semibold text-gray-900 dark:text-white mb-4">
-            Listado de calificaciones
+            Listado de Calificaciones
         </h2>
         <div class="bg-white dark:bg-gray-800 relative shadow-md sm:rounded-lg overflow-hidden">
             <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
@@ -263,20 +344,20 @@ const prevPage = () => {
                                 id="simple-search"
                                 v-model="searchTerm"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Buscar grado..."
+                                placeholder="Buscar Calificación..."
                             >
                         </div>
                     </form>
                 </div>
                 <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
-                    <!-- @click dispara la función agregargrado -->
+                    <!-- @click dispara la función agregarInscripción -->
                     <button
                     type="button"
                     @click="openAddModal"
                     class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                     >
                     <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
-                    Agregar calificación
+                    Agregar
                     </button>
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -299,8 +380,9 @@ const prevPage = () => {
                         <tr>
                             <th scope="col" class="px-4 py-3">Estudiante</th> 
                             <th scope="col" class="px-4 py-3">Asignatura</th> 
-                            <th scope="col" class="px-4 py-3">Ponderación</th> 
+                            <th scope="col" class="px-4 py-3">Nota</th> 
 
+                            
                             <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">Acciones</span>
                             </th>
@@ -309,12 +391,12 @@ const prevPage = () => {
                     <tbody>
                    
                         <tr
-                          v-for="item in filteredItems"
+                          v-for="item in paginatedItems"
                           :key="item.id"
                           class="border-b dark:border-gray-700"
                         >
-                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.studentId }}</th>
-                            <td class="px-4 py-3">{{ item.courseId }}</td>
+                            <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ item.studentCode }}</th>
+                            <td class="px-4 py-3">{{ item.courseCode }}</td>
                             <td class="px-4 py-3">{{ item.value }}</td>
 
                             <td class="px-4 py-3 flex items-center justify-end">
@@ -350,7 +432,7 @@ const prevPage = () => {
                          <!-- Mensaje si no hay resultados -->
                          <tr v-if="filteredItems.length === 0">
                             <td colspan="6" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                                No se encontraron grados.
+                                No se encontraron calificaciones.
                             </td>
                         </tr>
                     </tbody>
@@ -405,7 +487,7 @@ const prevPage = () => {
     :fields="modalFields"
     :initial-data="currentItem"
     @submit="handleFormSubmit"
-    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear Calificación'"
+    :submit-button-text="isEditMode ? 'Actualizar' : 'Crear Inscripción'"
   />
 
 </template>

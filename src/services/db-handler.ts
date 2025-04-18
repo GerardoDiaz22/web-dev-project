@@ -1,4 +1,4 @@
-import { collection, query, where, limit, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
 
 // Function to get a document from Firestore
@@ -68,16 +68,31 @@ const getAllDocuments = async (db: Firestore, collectionName: string) => {
 };
 
 // Function to add document to Firestore
-const addDocument = async (db: Firestore, collectionName: string, data: any) => {
+const addDocument = async (db: Firestore, collectionName: string, data: any, type:string) => {
   try {
     const collectionRef = collection(db, collectionName);
 
-    // Validate if entry already exists
-    const q = query(collectionRef, where('code', '==', data.code), limit(1));
-    const docSnap = await getDocs(q);
+    // If true, its a individual document and have to validate
+    if (type == 'individual'){
+      // Validate if entry already exists
+      const q = query(collectionRef, where('code', '==', data.code), limit(1));
+      const docSnap = await getDocs(q);
 
-    // Check if document exists
-    if (!docSnap.empty) throw { code: 'already-exists' };
+      // Check if document exists
+      if (!docSnap.empty) throw { code: 'already-exists' };
+    }
+    else if (type == 'group'){
+       // Validate if entry already exists
+       const q = query(collectionRef, where('courseCode', '==', data.courseCode), where('studentCode', '==', data.studentCode), limit(1));
+       const docSnap = await getDocs(q);
+
+       console.log(!docSnap.empty)
+
+       // Check if document exists
+       if (!docSnap.empty) throw { code: 'already-exists' };
+    }
+
+      
 
     // Add document to Firestore
     await addDoc(collection(db, collectionName), data);
@@ -98,7 +113,7 @@ const addDocument = async (db: Firestore, collectionName: string, data: any) => 
         msgErr = 'El documento no existe.';
         break;
       case 'already-exists':
-        msgErr = 'El documento ya existe.';
+        msgErr = 'Ya existe un documento con este código.';
         break;
       default:
         msgErr = 'Error al obtener documento. Inténtalo de nuevo más tarde.';
@@ -108,16 +123,30 @@ const addDocument = async (db: Firestore, collectionName: string, data: any) => 
 };
 
 // Function to edit document in Firestore
-const editDocument = async (db: Firestore, collectionName: string, documentCode: string, data: any) => {
+const editDocument = async (db: Firestore, collectionName: string, documentCode: string, data: any, type:string) => {
   try {
-    const collectionRef = collection(db, collectionName);
-    const q = query(collectionRef, where('code', '==', documentCode), limit(1));
-    const docSnap = await getDocs(q);
+    if (type == 'individual'){
+      const collectionRef = collection(db, collectionName);
+      const q = query(collectionRef, where('code', '==', documentCode), limit(1));
+      const docSnap = await getDocs(q);
+  
+      if (docSnap.empty) throw { code: 'not-found' };
+  
+      const docRef = docSnap.docs[0].ref;
+      await updateDoc(docRef, data);
+    }
+    else if (type == 'group'){
+      const collectionRef = collection(db, collectionName);
+      console.log("esto es data",data)
+      const q = query(collectionRef, where('courseCode', '==', data.courseCode), where('studentCode', '==', data.studentCode), limit(1));
+      const docSnap = await getDocs(q);
+      //If doesnt exist, that means that can be edited
+      if (!docSnap.empty) throw { code: 'already-exists' };
 
-    if (docSnap.empty) throw { code: 'not-found' };
-
-    const docRef = docSnap.docs[0].ref;
-    await updateDoc(docRef, data);
+      const docRef = doc(db, collectionName, data.id);
+        await updateDoc(docRef, data);
+    }
+    
   } catch (err) {
     console.error(err);
 

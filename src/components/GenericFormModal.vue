@@ -58,7 +58,7 @@ watch(() => props.initialData, (newData) => {
     // Asegurar que todas las keys definidas en 'fields' existen en formData
     props.fields.forEach(field => {
         if (!(field.key in formData.value)) {
-            formData.value[field.key] = getDefaultValue(field.type);
+            formData.value[field.key] = getDefaultValue(field.type, field.options);
         }
     });
 }, { immediate: true, deep: true }); // immediate para inicializar, deep por si initialData es complejo
@@ -80,12 +80,17 @@ watch(isVisible, (newValue) => {
   }
 });
 
+
+
+
 // --- Métodos ---
 
-function getDefaultValue(type) {
+function getDefaultValue(type,options) {
     switch(type) {
         case 'number': return 0;
         case 'checkbox': return false;
+        case 'select':
+            return options?.[0]?.value ?? '';
         default: return '';
     }
 }
@@ -104,7 +109,7 @@ function initializeModal() {
     if (modalElement.value && !flowbiteModalInstance.value) {
         const options = {
             placement: 'center',
-            backdrop: 'dynamic', // 'static' para no cerrar al hacer clic fuera
+            backdrop: 'static',
             backdropClasses: 'bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-40',
             closable: true, // Permite cerrar con ESC o botón de cierre
             onHide: () => {
@@ -157,7 +162,7 @@ onMounted(() => {
         </button>
         <div class="px-6 py-6 lg:px-8">
           <h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">{{ title }}</h3>
-          <form class="space-y-6" @submit.prevent="submitForm" novalidate>
+          <form class="space-y-6" @submit.prevent="submitForm">
             <div v-for="field in fields" :key="field.key">
               <label
                 :for="field.key"
@@ -165,7 +170,28 @@ onMounted(() => {
               >
                 {{ field.label }} <span v-if="field.required" class="text-red-500">*</span>
               </label>
+
+               <!-- *** INICIO: Bloque Modificado para Select *** -->
+               <select
+                v-if="field.type === 'select'"
+                :name="field.key"
+                :id="field.key"
+                v-model="formData[field.key]"
+                :required="field.required"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+              >
+                <option
+                  v-for="option in field.options"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="option.value === '' && field.required"  
+                >
+                  {{ option.text }}
+                </option>
+              </select>
+
               <input
+                v-else-if="field.type !== 'checkbox'"
                 :type="field.type || 'text'"
                 :name="field.key"
                 :id="field.key"
@@ -174,6 +200,7 @@ onMounted(() => {
                 :placeholder="field.placeholder || ''"
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
               >
+             
 
             </div>
 
